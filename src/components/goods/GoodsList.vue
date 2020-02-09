@@ -1,7 +1,7 @@
 <template>
   <div id="goodsList">
     <goods-list-item v-for="(item, index) in goods" :key="index"
-     :goodsItem="item" ></goods-list-item>
+     :goodsItem="item" :goodsType="goodsType" ></goods-list-item>
     <p class="line">...我也是有底线的...</p>
   </div>
 </template>
@@ -10,12 +10,18 @@
   export default {
     name: 'GoodsList',
     props: {
-        goods: {
-          type: Array,
-          default () {
-            return []
-          }
+      goods: {
+        type: Array,
+        default () {
+          return []
         }
+      },
+      goodsType: {
+        type: String,
+        default () {
+          return 'pop'
+        }
+      }
     },
     components: {
       GoodsListItem

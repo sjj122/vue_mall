@@ -2,15 +2,21 @@
     <div id="home">
       <!--navbar-->
       <nav-bar class="home-nav">
-        <p slot="middle">逛街</p>
+        <p slot="middle"> H-Y 街 </p>
       </nav-bar>
+      <!--再来一个分类导航-->
+      <tab-control v-show="isTabControl" :titles="['流行', '新款', '精选']"
+                   @tabClick="tabClick" class="tab_control"
+                ref="tabControlFake"></tab-control>
       <!--滑动框架-->
-      <scroll class="content" ref="scroll" :probeType="3" @scrollEvent="scrollEvent">
+      <scroll class="content" ref="scroll" :probeType="3"
+              @scrollEvent="scrollEvent" :pullingUpLoad="true"
+              @pullingUp="loadMore">
         <!--轮播图-->
         <swiper>
             <swiper-item v-for="(item, index) in banners" :key="index">
               <a :href="item.link">
-                <img :src="item.image">
+                <img :src="item.image" @load="swiperImgLoad">
               </a>
             </swiper-item>
           </swiper>
@@ -19,10 +25,10 @@
         <!--本周流行-->
         <feature-view></feature-view>
         <!--分类导航-->
-        <tab-control class="tab-control"
-              :titles="['流行', '新款', '精选']" @tabClick="tabClick"></tab-control>
+        <tab-control :titles="['流行', '新款', '精选']"
+        @tabClick="tabClick" ref="tabControl"></tab-control>
         <!--商品列表-->
-        <goods-list :goods="getGoodsIndex"></goods-list>
+        <goods-list :goods="getGoodsIndex" :goodsType="goodsType"></goods-list>
       </scroll>
       <!--回到顶部小图片-->
       <back-top v-show="backTopIsShow" @click.native="backTopClick"></back-top>
@@ -40,6 +46,7 @@
   import FeatureView from './childrenComps/FeatureView'
 
   import {getHomeMultidata} from 'network/home'
+  import {debounce} from 'common/utils'         // 导入防抖函数
 
   import data from 'network/homeData'
 
@@ -53,7 +60,13 @@
         goodsTypeList: ['pop', 'news', 'sell'],
         goodsType: 'pop',
 
-        backTopIsShow: false
+        backTopIsShow: false,
+
+        tabControl_OffsetTop: 0,
+        isLoad: false,          // 监听图片是否加载完成
+        isTabControl: false,    // tabControl 的位置监听
+
+        saveY: 0,               // 记录离开时的位置
       }
     },
     components: {
@@ -68,6 +81,7 @@
       BackTop
     },
     computed: {
+      // 决定到底传哪一系列的数据
       getGoodsIndex () {
         return this.goods[this.goodsType].list
       }
@@ -75,14 +89,43 @@
     methods: {
       tabClick (index) {
         this.goodsType = this.goodsTypeList[index]
+        // 使导航的选中同步起来
+        this.$refs.tabControlFake.currentIndex = index
+        this.$refs.tabControl.currentIndex = index
       },
       backTopClick () {
         // 直接调scroll组件里的一个方法
         this.$refs.scroll.scrollToTop(0, 0)
       },
+      // 监听页面的滚动
       scrollEvent (position) {
-        // position.y 是一个负值，所以我们要给它转正
+        // BackTop 的监听：position.y 是一个负值，所以我们要给它转正
         this.backTopIsShow = -position.y > 600
+
+        // TabControl 的监听
+        this.isTabControl = (-position.y) >= this.tabControl_OffsetTop
+      },
+      loadMore () {
+        // 在这里请求数据，我们没有数据就只有创造假数据了
+        const fakeData = [{image: 'https://s5.mogucdn.com/mlcdn/55cf19/191116_7i02c2383cb9gg6j5aak43e5fe834_640x960.jpg_440x587.v1cAC.40.webp',
+          title: '我是一个假商品', price: 100, cfav: 58},
+          {image: 'https://s5.mogucdn.com/mlcdn/c45406/190812_6hd8jb81lffj5d8lji7c5gffc07f6_640x960.jpg_440x587.v1cAC.40.webp',
+            title: '我也是一个假商品', price: 100, cfav: 99}]
+
+        this.goods[this.goodsType].list.push(...fakeData)
+        this.goods[this.goodsType].page += 1
+
+        // 请求完成后调用 finishPullUp 方法结束上拉加载
+        this.$refs.scroll.finishPullUp()
+      },
+      // 监听轮播图图片加载完
+      swiperImgLoad () {
+        // 获取tabControl的OffsetTop
+        // 所有的组件都有一个属性叫 $el ：用户获取组件中的DOM元素的
+        if (!this.isLoad) {
+          this.tabControl_OffsetTop = this.$refs.tabControl.$el.offsetTop
+          this.isLoad = true
+        }
       }
     },
     created () {
@@ -91,28 +134,34 @@
         this.banners = res.data.banner.list
         this.recommends = res.data.recommend.list
       })
+    },
+    mounted () {
+      const refresh = debounce(this.$refs.scroll.refreshScroll, 200)
+      // 监听图片的加载，刷新scroll对象
+      this.$bus.$on('itemImageLoad', () => {
+        refresh()
+      })
+    },
+    // 组件活跃的回调
+    activated () {
+      this.$refs.scroll.scroll.scrollTo(0 ,this.saveY, 0)
+      // 刷新一下scroll，就不会出现莫名回到顶部的问题了
+      this.$refs.scroll.refreshScroll()
+    },
+    // 组件不活跃的回调
+    deactivated () {
+      this.saveY = this.$refs.scroll.getScrollY()
     }
   }
 </script>
 <style scoped>
   .home-nav {
     background-color: var(--color-tint);  /*直接使用我们定义的变量*/
-    color: white;
-    position: fixed;
-    right: 0;
-    left: 0;
-    top: 0;
-    z-index: 1;
+    color: #fff;
   }
   #home {
-    padding-top: 44px;
     height: 100vh;    /* 视口高度 */
     position: relative;
-  }
-  .tab-control {
-    position: sticky; /*粘性布局*/
-    background-color: #fff;
-    top: 44px;
   }
   .content {
     /*height: calc(100% - 49px);*/
@@ -120,6 +169,12 @@
     overflow: hidden;
     top: 44px;
     bottom: 49px;
+    right: 0;
+    left: 0;
+  }
+  .tab_control {
+    position: relative;
+    top: 0;
     right: 0;
     left: 0;
   }

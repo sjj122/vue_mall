@@ -1,6 +1,6 @@
 <template>
-  <div class="goods-item">
-    <img :src="goodsItem.image">
+  <div class="goods-item" @click="goToDetailPage">
+    <img :src="goodsItem.image" @load="imgLoad">
     <div class="goods-info">
       <p>{{goodsItem.title}}</p>
       <span class="price">{{goodsItem.price}}</span>
@@ -12,12 +12,27 @@
   export default {
     name: 'GoodsListItem',
     props: {
-        goodsItem: {
-          type: Object,
-          default () {
-            return {}
-          }
+      goodsItem: {
+        type: Object,
+        default () {
+          return {}
         }
+      },
+      goodsType: {
+        type: String,
+        default () {
+          return 'pop'
+        }
+      }
+    },
+    methods: {
+      imgLoad () {
+        this.$bus.$emit('itemImageLoad')
+      },
+      // 调转到详情页
+      goToDetailPage () {
+        this.$router.push(`/detail/${this.goodsItem.id}/${this.goodsType}`)
+      }
     }
   }
 </script>

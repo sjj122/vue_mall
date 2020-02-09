@@ -24,11 +24,11 @@
         },
         computed: {
             isActive () {
-                return this.$route.path === this.path
-                // return this.$route.path.indexOf(this.path) !== -1
+              return this.$route.path === this.path
+              // return this.$route.path.indexOf(this.path) !== -1
             },
             isActiveColor () {
-                return this.isActive ? { color: this.activeColor } : {}
+              return this.isActive ? { color: this.activeColor } : {}
             }
         },
         methods: {
