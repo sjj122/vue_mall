@@ -40,6 +40,7 @@
       },
       // 刷新scroll对象
       refreshScroll () {
+        // console.log('---')
         this.scroll && this.scroll.refresh()
       },
       // 返回当前的位置 Y

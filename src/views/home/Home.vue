@@ -46,9 +46,9 @@
   import FeatureView from './childrenComps/FeatureView'
 
   import {getHomeMultidata} from 'network/home'
-  import {debounce} from 'common/utils'         // 导入防抖函数
-
   import data from 'network/homeData'
+
+  import {itemImageLoadMixin} from 'common/mixin'
 
   export default {
     name: 'Home',
@@ -135,12 +135,10 @@
         this.recommends = res.data.recommend.list
       })
     },
+    mixins: [itemImageLoadMixin],
     mounted () {
-      const refresh = debounce(this.$refs.scroll.refreshScroll, 200)
-      // 监听图片的加载，刷新scroll对象
-      this.$bus.$on('itemImageLoad', () => {
-        refresh()
-      })
+      // 对GoodsList组件中的图片中的加载进行防抖操作
+      // 已加入混入对象中 mixin.js
     },
     // 组件活跃的回调
     activated () {
@@ -150,7 +148,11 @@
     },
     // 组件不活跃的回调
     deactivated () {
+      // 1.离开时记录当前的屏幕位置
       this.saveY = this.$refs.scroll.getScrollY()
+
+      // 2.取消对图片事件加载的监听
+      this.$bus.$off('itemImageLoad', this.itemImageLoadFunc)
     }
   }
 </script>

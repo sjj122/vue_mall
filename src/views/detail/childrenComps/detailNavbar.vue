@@ -17,13 +17,15 @@
     },
     data () {
       return {
-        titles: ['商品', '参数', '评论', '推荐'],
+        titles: ['商品', '试穿', '评论', '推荐'],
         currentIndex: 0
       }
     },
     methods: {
       itemTitleClick (index) {
         this.currentIndex = index
+        // 将点击事件发出去
+        this.$emit('detailNavBarClick', index)
       },
       // 返回
       backPage () {
