@@ -40,7 +40,6 @@
   import {Swiper, SwiperItem} from 'components/swiper/index'
   import TabControl from 'components/tabControl/TabControl'
   import Scroll from 'components/scroll/Scroll'
-  import BackTop from 'components/backTop/BackTop'
 
   import RecommendView from './childrenComps/HomeRecommendView'
   import FeatureView from './childrenComps/FeatureView'
@@ -48,7 +47,7 @@
   import {getHomeMultidata} from 'network/home'
   import data from 'network/homeData'
 
-  import {itemImageLoadMixin} from 'common/mixin'
+  import {itemImageLoadMixin, backTopMixin} from 'common/mixin'
 
   export default {
     name: 'Home',
@@ -59,8 +58,6 @@
         goods: data,
         goodsTypeList: ['pop', 'news', 'sell'],
         goodsType: 'pop',
-
-        backTopIsShow: false,
 
         tabControl_OffsetTop: 0,
         isLoad: false,          // 监听图片是否加载完成
@@ -77,8 +74,7 @@
       FeatureView,
       TabControl,
       GoodsList,
-      Scroll,
-      BackTop
+      Scroll
     },
     computed: {
       // 决定到底传哪一系列的数据
@@ -92,10 +88,6 @@
         // 使导航的选中同步起来
         this.$refs.tabControlFake.currentIndex = index
         this.$refs.tabControl.currentIndex = index
-      },
-      backTopClick () {
-        // 直接调scroll组件里的一个方法
-        this.$refs.scroll.scrollToTop(0, 0)
       },
       // 监听页面的滚动
       scrollEvent (position) {
@@ -135,7 +127,7 @@
         this.recommends = res.data.recommend.list
       })
     },
-    mixins: [itemImageLoadMixin],
+    mixins: [itemImageLoadMixin, backTopMixin],
     mounted () {
       // 对GoodsList组件中的图片中的加载进行防抖操作
       // 已加入混入对象中 mixin.js

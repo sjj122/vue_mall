@@ -13,7 +13,7 @@
     position: fixed;
     z-index: 2;
     right: 10px;
-    bottom: 50px;
+    bottom: 60px;
   }
   .backTop img {
     width: 43px;

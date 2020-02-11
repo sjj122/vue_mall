@@ -1,4 +1,5 @@
 import {debounce} from "./utils";
+import backTop from 'components/backTop/BackTop'
 
 export const itemImageLoadMixin = {
   data () {
@@ -15,3 +16,19 @@ export const itemImageLoadMixin = {
   }
 }
 
+export const backTopMixin = {
+  data () {
+    return {
+      backTopIsShow: false
+    }
+  },
+  methods: {
+    backTopClick () {
+      // 直接调scroll组件里的一个方法
+      this.$refs.scroll.scrollToTop(0, 0)
+    },
+  },
+  components: {
+    backTop
+  }
+}

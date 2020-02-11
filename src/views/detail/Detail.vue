@@ -1,7 +1,7 @@
 <template>
   <div id="detail">
-    <detail-nav-bar class="detail-navbar" @detailNavBarClick="detailNavBarClick"></detail-nav-bar>
-    <scroll class="content" ref="scroll">
+    <detail-nav-bar ref="nav" class="detail-navbar" @detailNavBarClick="detailNavBarClick"></detail-nav-bar>
+    <scroll class="content" ref="scroll" :probeType="3" @scrollEvent="scrollGo">
       <detail-swiper :topImages="topImages"></detail-swiper>
       <detail-base-info :good="goodInfo"></detail-base-info>
       <detail-shop-info :shopInfo="shopInfo"></detail-shop-info>
@@ -9,6 +9,9 @@
       <detail-comment ref="comment" :comments="comments"></detail-comment>
       <detail-recommend ref="recommend" :recommendGoodsList="recommendGoodsList"></detail-recommend>
     </scroll>
+    <detail-bottom-bar @addCart="addCart"></detail-bottom-bar>
+    <!--回到顶部小图片-->
+    <back-top v-show="backTopIsShow" @click.native="backTopClick"></back-top>
   </div>
 </template>
 <script>
@@ -19,15 +22,17 @@
   import detailGoodsInfo from './childrenComps/detailGoodsInfo'
   import detailRecommend from './childrenComps/detailRecommend'
   import detailComment from './childrenComps/detailComment'
+  import detailBottomBar from './childrenComps/detailBottomBar'
 
   import Scroll from 'components/scroll/Scroll'
 
   import data from 'network/homeData'
   import {Goods, Shop} from 'network/detail'
   import { itemInfo, columns, services, shopInfo, comments } from 'network/detailData'
-  import {debounce} from 'common/utils'
 
-  import {itemImageLoadMixin} from 'common/mixin'
+  import {debounce} from 'common/utils'
+  import {ADD_CART} from 'common/const'
+  import {itemImageLoadMixin, backTopMixin} from 'common/mixin'
 
   export default {
     name: 'Detail',
@@ -65,7 +70,9 @@
         // 联动导航的y值
         navBarYValue: [],
         // 添加抖动函数之后的获值
-        getThemeTopY: null
+        getThemeTopY: null,
+        // 当前navbar的index
+        currentIndex: -1
       }
     },
     components: {
@@ -76,7 +83,8 @@
       Scroll,
       detailGoodsInfo,
       detailRecommend,
-      detailComment
+      detailComment,
+      detailBottomBar
     },
     methods: {
       // 监听推荐图片的加载，给图片加载防抖
@@ -91,9 +99,43 @@
       // navbar的监听
       detailNavBarClick (index) {
         this.$refs.scroll.scrollToTop(0, -this.navBarYValue[index] + 55)
+      },
+      // 监听滚动
+      scrollGo (position) {
+        // 1. 获取y值
+        const y = -position.y
+        // 2.对比navbar需要的值
+        // 0-790:1  790-5994:2 5994-6550:3 6550- :4
+        const length = this.navBarYValue.length
+        for (let i = 0; i < length; ++i) {
+          if (this.currentIndex !== i && (y >= this.navBarYValue[i] - 55
+              && y < this.navBarYValue[i + 1])) {
+            this.currentIndex = i
+            // 拿到navbar组件，赋值给它的currentIndex
+            this.$refs.nav.currentIndex = this.currentIndex
+          }
+        }
+
+        // 监听页面滚动，显示backTop小图片
+        // BackTop 的监听：position.y 是一个负值，所以我们要给它转正
+        this.backTopIsShow = -position.y > 600
+      },
+      // 监听添加到购物车事件
+      [ADD_CART] () {
+        const good = {
+          image: this.good.image,
+          desc: this.goodInfo.desc,
+          title: this.good.title,
+          price: this.goodInfo.newPrice,
+          id: this.good.id
+        }
+        this.$store.dispatch(ADD_CART, good).then(res => {
+          // 提示添加到购物车成功
+          this.$toast.show(res)
+        })
       }
     },
-    mixins: [itemImageLoadMixin],
+    mixins: [itemImageLoadMixin, backTopMixin],
     mounted () {
       // 对推荐图片中的加载进行防抖操作
       // 已加入混入对象中 mixin.js
@@ -130,14 +172,15 @@
       this.getThemeTopY = debounce(() => {
         this.navBarYValue = []
         this.navBarYValue.push(0, this.$refs.params.$el.offsetTop
-          , this.$refs.comment.$el.offsetTop, this.$refs.recommend.$el.offsetTop)
+          , this.$refs.comment.$el.offsetTop, this.$refs.recommend.$el.offsetTop,
+         Number.MAX_VALUE)
       }, 500)
     }
   }
 </script>
 <style scoped>
   #detail {
-    height: 100vh;
+    height: 100vh;    /* 给定视口高度 100% */
   }
   .detail-navbar {
     position: relative;
@@ -149,6 +192,7 @@
   }
   .content {
     /* 计算高度 */
-    height: calc(100% - 44px);
+    height: calc(100% - 102px);
+    overflow: hidden;
   }
 </style>
